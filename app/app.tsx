@@ -1,8 +1,7 @@
-import React from 'react'
+import * as React from 'react'
 import {Meta, Scripts, Styles, Routes, useGlobalData} from '@remix-run/react'
 
 function App() {
-  const data = useGlobalData()
   return (
     <html lang="en">
       <head>
@@ -13,9 +12,6 @@ function App() {
       <body>
         <Routes />
         <Scripts />
-        <footer>
-          <p>This is awesome!!! {data.date}</p>
-        </footer>
       </body>
     </html>
   )

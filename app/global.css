@@ -1,3 +1,9 @@
+*,
+:after,
+:before {
+  box-sizing: border-box;
+}
+
 body {
-  color: red;
+  font-family: Century Gothic, Futura, sans-serif;
 }
