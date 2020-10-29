@@ -3,6 +3,8 @@
   "include": ["**/*"],
   "compilerOptions": {
     "outDir": "../loaders-build",
-    "module": "commonjs"
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }
