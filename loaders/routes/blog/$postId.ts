@@ -11,16 +11,15 @@ const remove = require('unist-util-remove')
 const yaml = require('yaml')
 
 type DynamicObj = {[name: string]: string}
-const postLoader: DataLoader = async ({params}) => {
-  const baseDir = 'content/blog/props-vs-state'
+const postLoader: DataLoader = async ({params, context}) => {
+  const {graphqlWithAuth} = context
+  const baseDir = `content/blog/${params.postId}`
   const allFiles = await downloadDirecotry(baseDir)
   const moduleById: DynamicObj = {}
   const urlFiles: DynamicObj = {}
-  console.log(allFiles.map(f => Object.keys(f)))
   let main
   for (const file of allFiles) {
     if (file.url) {
-      console.log('URL FILE', file)
       urlFiles[file.path] = file.url
       continue
     }
@@ -30,14 +29,28 @@ const postLoader: DataLoader = async ({params}) => {
     moduleById[id] = file.text
   }
   if (!main) throw new Error('This directory has no index')
-  const {contents} = await mdxCompiler.process(main.text)
-  const entry = path.join(__dirname, baseDir, './index.mdx.js')
-  moduleById[entry] = contents
-  // console.log(moduleById)
 
-  const result = await bundleCode(contents, entry, moduleById)
+  let entryCode = main.text as string
+  let entryPath = path.join(__dirname, main.path)
+  let frontmatter
+  if (main.path.endsWith('.mdx')) {
+    const compiledMdx = await mdxCompiler.process(main.text)
+    entryCode = compiledMdx.contents
+    frontmatter = compiledMdx.data.frontmatter
+    entryPath = path.join(__dirname, baseDir, './index.mdx.js')
+  }
+  moduleById[entryPath] = entryCode
 
-  return {js: `${result[0].code}return Component;`, urlFiles}
+  const result = await bundleCode(entryCode, entryPath, moduleById)
+
+  return {
+    js: `
+${result[0].code}
+Component.frontmatter = ${JSON.stringify(frontmatter ?? {})}
+return Component;
+  `.trim(),
+    urlFiles,
+  }
 }
 
 module.exports = postLoader
@@ -87,13 +100,7 @@ const mdxCompiler = createCompiler({
 })
 
 async function bundleCode(code: string, entry: string, moduleById: DynamicObj) {
-  // const moduleById = {
-  //   [input]: code,
-  //   [path.join(__dirname, './great-comp.tsx')]: greatCompCode,
-  // }
-  // console.log(code)
   const inputOptions = {
-    // core input options
     external: ['react', 'react-dom'],
     input: entry,
     plugins: [
@@ -125,7 +132,7 @@ async function bundleCode(code: string, entry: string, moduleById: DynamicObj) {
           ['@babel/preset-typescript', {allExtensions: true, isTSX: true}],
         ],
       }),
-      // terser(),
+      terser(),
     ],
   }
 

@@ -6,7 +6,7 @@ function Post() {
   const {js, urlFiles} = data
   const fn = new Function('React', js)
   const Component = fn(React)
-  console.log(urlFiles)
+  // console.log(Component, urlFiles)
   return (
     <div>
       <Component />
